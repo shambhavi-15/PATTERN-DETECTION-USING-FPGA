@@ -1,0 +1,36 @@
+module dna_pattern_detector (
+ input wire clk,
+ input wire rst, // synchronous, active-high reset
+ input wire base_valid, // accept base_in when high
+ input wire [1:0] base_in,
+ output reg match_pulse
+);
+ localparam [1:0] BASE_A = 2'b00;
+ localparam [1:0] BASE_T = 2'b11;
+ localparam [1:0] BASE_G = 2'b10;
+ // Stores the two previous accepted bases.
+ reg [3:0] previous_bases;
+ reg [1:0] bases_seen;
+ always @(posedge clk) begin
+ if (rst) begin
+ previous_bases <= 4'b0;
+ bases_seen <= 2'b0;
+ match_pulse <= 1'b0;
+ end else begin
+ // Default output: a match is a one-cycle pulse.
+ match_pulse <= 1'b0;
+ if (base_valid) begin
+ // After at least two bases, compare previous A,T with current G.
+ if ((bases_seen >= 2) &&
+ (previous_bases[3:2] == BASE_A) &&
+ (previous_bases[1:0] == BASE_T) &&
+ (base_in == BASE_G)) begin
+ match_pulse <= 1'b1;
+ end
+ previous_bases <= {previous_bases[1:0], base_in};
+ if (bases_seen < 2)
+ bases_seen <= bases_seen + 1'b1;
+ end
+ end
+ end
+endmodule
